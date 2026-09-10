@@ -6,6 +6,7 @@ from app.auth.routes import router as auth_router
 from app.transactions.routes import router as transactions_router
 from app.alerts.routes import router as alerts_router
 from app.analysis.routes import router as analysis_router
+from app.reports.routes import router as reports_router
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -27,6 +28,7 @@ app.include_router(auth_router)
 app.include_router(transactions_router)
 app.include_router(alerts_router)
 app.include_router(analysis_router)
+app.include_router(reports_router)
 
 
 @app.get("/health", tags=["system"])

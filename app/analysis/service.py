@@ -158,7 +158,7 @@ def get_fraud_statistics(db: Session, user: User) -> dict:
     return {
         "normal_transactions": normal_transactions,
         "suspicious_transactions": suspicious_transactions,
-        "total_alerts": sum(row.count for row in alerts_by_status_rows),
+        "total_alerts": sum(row.count for row in list(alerts_by_status_rows)),
         "alerts_by_status": [
             {"alert_status": row.alert_status, "count": row.count}
             for row in alerts_by_status_rows
