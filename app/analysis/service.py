@@ -5,7 +5,9 @@ from sqlalchemy import Date, cast, func, select
 from sqlalchemy.orm import Session
 
 from app.alerts.models import FraudAlert
-from app.core.enums import FraudStatus
+from app.cards.models import Card
+from app.core.enums import AlertStatus, FraudStatus
+from app.departments.models import Department
 from app.transactions.models import Transaction
 from app.users.models import User
 
@@ -32,14 +34,36 @@ def get_dashboard_summary(db: Session, user: User) -> dict:
         .where(Transaction.user_id == user.id)
     ) or 0
 
+    active_cards = db.scalar(
+        select(func.count(Card.id)).where(Card.status == "active")
+    ) or 0
+    active_users = db.scalar(select(func.count(User.id))) or 0
+    departments = db.scalar(
+        select(func.count(Department.id)).where(Department.status == "active")
+    ) or 0
+    active_alerts = db.scalar(
+        select(func.count(FraudAlert.id))
+        .join(FraudAlert.transaction)
+        .where(
+            Transaction.user_id == user.id,
+            FraudAlert.alert_status.in_([AlertStatus.NEW, AlertStatus.UNDER_REVIEW]),
+        )
+    ) or 0
+
+    total_value = transaction_counts.total_transaction_value or Decimal("0")
+
     return {
         "total_transactions": transaction_counts.total_transactions or 0,
         "normal_transactions": transaction_counts.normal_transactions or 0,
         "suspicious_transactions": transaction_counts.suspicious_transactions or 0,
         "fraud_alert_count": fraud_alert_count,
-        "total_transaction_value": (
-            transaction_counts.total_transaction_value or Decimal("0")
-        ),
+        "total_transaction_value": total_value,
+        "total_amount": total_value,
+        "active_cards": active_cards,
+        "active_users": active_users,
+        "departments": departments,
+        "active_alerts": active_alerts,
+        "total_alerts": fraud_alert_count,
     }
 
 
@@ -77,6 +101,9 @@ def get_transaction_trends(
             "transaction_count": row.transaction_count,
             "total_value": row.total_value,
             "suspicious_count": row.suspicious_count,
+            "count": row.transaction_count,
+            "value": row.total_value,
+            "suspicious": row.suspicious_count,
         }
         for row in rows
     ]
@@ -113,6 +140,10 @@ def get_distribution(
             "transaction_count": row.transaction_count,
             "total_value": row.total_value,
             "suspicious_count": row.suspicious_count,
+            "label": row.category,
+            "count": row.transaction_count,
+            "value": row.total_value,
+            "suspicious": row.suspicious_count,
         }
         for row in rows
     ]
@@ -155,16 +186,26 @@ def get_fraud_statistics(db: Session, user: User) -> dict:
         .order_by(func.count(FraudAlert.id).desc())
     ).all()
 
+    total_transactions = normal_transactions + suspicious_transactions
+    alerts_by_status = [
+        {"alert_status": row.alert_status, "count": row.count}
+        for row in alerts_by_status_rows
+    ]
+    alerts_by_rule = [
+        {"rule_name": row.rule_name, "count": row.count}
+        for row in alerts_by_rule_rows
+    ]
+
     return {
         "normal_transactions": normal_transactions,
         "suspicious_transactions": suspicious_transactions,
-        "total_alerts": sum(row.count for row in list(alerts_by_status_rows)),
-        "alerts_by_status": [
-            {"alert_status": row.alert_status, "count": row.count}
-            for row in alerts_by_status_rows
-        ],
-        "alerts_by_rule": [
-            {"rule_name": row.rule_name, "count": row.count}
-            for row in alerts_by_rule_rows
-        ],
+        "total_alerts": sum(item["count"] for item in alerts_by_status),
+        "alerts_by_status": alerts_by_status,
+        "alerts_by_rule": alerts_by_rule,
+        "total_transactions": total_transactions,
+        "suspicious_rate": (
+            suspicious_transactions / total_transactions if total_transactions else 0
+        ),
+        "by_alert_status": alerts_by_status,
+        "by_rule": alerts_by_rule,
     }

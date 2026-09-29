@@ -12,6 +12,12 @@ class DashboardSummaryResponse(BaseModel):
     suspicious_transactions: int
     fraud_alert_count: int
     total_transaction_value: Decimal
+    total_amount: Decimal
+    active_cards: int
+    active_users: int
+    departments: int
+    active_alerts: int
+    total_alerts: int
 
 
 class TransactionTrendResponse(BaseModel):
@@ -19,6 +25,9 @@ class TransactionTrendResponse(BaseModel):
     transaction_count: int
     total_value: Decimal
     suspicious_count: int
+    count: int
+    value: Decimal
+    suspicious: int
 
 
 class DistributionResponse(BaseModel):
@@ -26,6 +35,10 @@ class DistributionResponse(BaseModel):
     transaction_count: int
     total_value: Decimal
     suspicious_count: int
+    label: str
+    count: int
+    value: Decimal
+    suspicious: int
 
 
 class AlertStatusCountResponse(BaseModel):
@@ -44,3 +57,7 @@ class FraudStatisticsResponse(BaseModel):
     total_alerts: int
     alerts_by_status: list[AlertStatusCountResponse]
     alerts_by_rule: list[FraudRuleCountResponse]
+    total_transactions: int
+    suspicious_rate: float
+    by_alert_status: list[AlertStatusCountResponse]
+    by_rule: list[FraudRuleCountResponse]

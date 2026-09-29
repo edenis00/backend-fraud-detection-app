@@ -29,6 +29,7 @@ def evaluate_transaction(
     if high_amount_match:
         matches.append(high_amount_match)
 
+    transaction_time = transaction.transaction_date
     window_start = transaction.transaction_date - timedelta(
         minutes=settings.fraud_frequency_window_minutes
     )
@@ -37,7 +38,7 @@ def evaluate_transaction(
             Transaction.user_id == transaction.user_id,
             Transaction.card_reference == transaction.card_reference,
             Transaction.transaction_date >= window_start,
-            Transaction.transaction_date <= transaction.transaction_date,
+            Transaction.transaction_date <= transaction_time,
         )
     )
 
@@ -57,7 +58,7 @@ def evaluate_transaction(
         .where(
             Transaction.user_id == transaction.user_id,
             Transaction.card_reference == transaction.card_reference,
-            Transaction.transaction_date < transaction.transaction_date,
+            Transaction.transaction_date < transaction_time,
         )
         .order_by(Transaction.transaction_date.desc())
         .limit(50)

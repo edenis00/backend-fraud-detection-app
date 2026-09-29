@@ -1,8 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Numeric, String, func
+from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.enums import FraudStatus, TransactionStatus
@@ -29,6 +29,11 @@ class Transaction(Base):
         nullable=False,
     )
     card_reference: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    card_id: Mapped[Optional[int]] = mapped_column(ForeignKey("cards.id"), index=True, nullable=True)
+    department_id: Mapped[Optional[int]] = mapped_column(ForeignKey("departments.id"), index=True, nullable=True)
+    merchant: Mapped[Optional[str]] = mapped_column(String(255))
+    currency: Mapped[str] = mapped_column(String(8), default="NGN", nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text)
     amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
     transaction_type: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
     location: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
@@ -58,6 +63,8 @@ class Transaction(Base):
         "User",
         back_populates="transactions",
     )
+    card: Mapped[Optional["Card"]] = relationship("Card")
+    department: Mapped[Optional["Department"]] = relationship("Department")
     alerts: Mapped[list["FraudAlert"]] = relationship(
         "FraudAlert",
         back_populates="transaction",

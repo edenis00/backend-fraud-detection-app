@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
+from app.core.config import get_settings
 from app.core.enums import FraudStatus, TransactionStatus
 from app.database.session import get_db
 from app.transactions.schemas import (
@@ -23,7 +24,8 @@ from app.transactions.service import (
 from app.users.models import User
 from app.transactions.models import Transaction
 
-router = APIRouter(prefix="/api/transactions", tags=["transactions"])
+settings = get_settings()
+router = APIRouter(prefix=f"{settings.api_prefix}/transactions", tags=["transactions"])
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
 

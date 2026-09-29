@@ -17,8 +17,10 @@ from app.reports.service import (
     list_reports,
 )
 from app.users.models import User
+from app.core.config import get_settings
 
-router = APIRouter(prefix="/api/reports", tags=["reports"])
+settings = get_settings()
+router = APIRouter(prefix=f"{settings.api_prefix}/reports", tags=["reports"])
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
 

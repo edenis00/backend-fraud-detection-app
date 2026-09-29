@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.analysis.schemas import (
@@ -19,8 +19,10 @@ from app.analysis.service import (
 from app.auth.dependencies import get_current_user
 from app.database.session import get_db
 from app.users.models import User
+from app.core.config import get_settings
 
-router = APIRouter(prefix="/api/analysis", tags=["analysis"])
+settings = get_settings()
+router = APIRouter(prefix=f"{settings.api_prefix}/analysis", tags=["analysis"])
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
 
@@ -37,9 +39,14 @@ def get_summary(
 def get_trends(
     db: DatabaseSession,
     current_user: User = Depends(get_current_user),
+    days: int | None = Query(default=None, ge=1, le=365),
     start_date: datetime | None = None,
     end_date: datetime | None = None,
 ) -> list[TransactionTrendResponse]:
+    if days is not None and start_date is None and end_date is None:
+        end_date = datetime.now(timezone.utc)
+        start_date = end_date - timedelta(days=days - 1)
+
     return get_transaction_trends(db, current_user, start_date, end_date)
 
 
@@ -65,3 +72,16 @@ def get_fraud(
     current_user: User = Depends(get_current_user),
 ) -> FraudStatisticsResponse:
     return get_fraud_statistics(db, current_user)
+
+
+@router.get("/rules")
+def get_rules(
+    current_user: User = Depends(get_current_user),
+) -> dict[str, float | int]:
+    settings = get_settings()
+
+    return {
+        "amountThreshold": settings.fraud_amount_threshold,
+        "frequencyLimit": settings.fraud_frequency_limit,
+        "frequencyWindowMinutes": settings.fraud_frequency_window_minutes,
+    }

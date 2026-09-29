@@ -18,8 +18,10 @@ from app.auth.dependencies import get_current_user
 from app.core.enums import AlertStatus
 from app.database.session import get_db
 from app.users.models import User
+from app.core.config import get_settings
 
-router = APIRouter(prefix="/api/alerts", tags=["fraud alerts"])
+settings = get_settings()
+router = APIRouter(prefix=f"{settings.api_prefix}/alerts", tags=["fraud alerts"])
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
 

@@ -10,6 +10,9 @@ settings = get_settings()
 engine = create_engine(
     settings.database_url,
     pool_pre_ping=True,
+    connect_args=(
+        {"connect_timeout": 5} if settings.database_url.startswith("postgres") else {}
+    ),
 )
 
 SessionLocal = sessionmaker(
