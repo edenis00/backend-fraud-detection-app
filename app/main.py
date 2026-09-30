@@ -16,6 +16,7 @@ from app.cards.routes import router as cards_router
 from app.fraud_rules.routes import router as fraud_rules_router
 from app.audit.routes import router as audit_router
 from app.breakdown.route import router as breakdown_router
+from app.admin.routes import router as admin_router
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -44,6 +45,7 @@ app.include_router(cards_router)
 app.include_router(fraud_rules_router)
 app.include_router(audit_router)
 app.include_router(breakdown_router)
+app.include_router(admin_router)
 
 
 @app.get("/health", tags=["system"])
