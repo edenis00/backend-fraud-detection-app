@@ -6,10 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.alerts.models import FraudAlert
 from app.cards.models import Card
-from app.core.enums import AlertStatus, FraudStatus
 from app.departments.models import Department
 from app.transactions.models import Transaction
 from app.users.models import User
+from app.core.enums import AlertStatus, FraudStatus, UserRole
 
 
 def get_dashboard_summary(db: Session, user: User) -> dict:
@@ -73,7 +73,9 @@ def get_transaction_trends(
     start_date: datetime | None = None,
     end_date: datetime | None = None,
 ) -> list[dict]:
-    filters = [Transaction.user_id == user.id]
+    filters = []
+    if user.role not in (UserRole.ADMIN, UserRole.ANALYST):
+        filters.append(Transaction.user_id == user.id)
 
     if start_date:
         filters.append(Transaction.transaction_date >= start_date)
