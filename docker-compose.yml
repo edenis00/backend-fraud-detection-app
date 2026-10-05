@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16
     environment:
       POSTGRES_DB: fraud_detection
       POSTGRES_USER: fraud_user
@@ -16,7 +16,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: app/Dockerfile
     environment:
       DATABASE_URL: "postgresql+psycopg://fraud_user:${POSTGRES_PASSWORD:-fraud_dev_password}@db:5432/fraud_detection"
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local-compose-only-change-this-secret}
@@ -29,7 +29,7 @@ services:
 
   frontend:
     build:
-      context: ./insightful-transactions
+      context: ./frontend
       dockerfile: Dockerfile
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api}
