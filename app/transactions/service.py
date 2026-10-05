@@ -13,6 +13,7 @@ from app.fraud_detection.service import evaluate_transaction
 from app.transactions.models import Transaction
 from app.transactions.schemas import TransactionCreate
 from app.users.models import User
+from app.cards.models import Card
 
 
 @dataclass
@@ -35,6 +36,15 @@ def process_transaction(
     if existing:
         raise ValueError("Transaction reference already exists.")
 
+    card = db.scalar(
+        select(Card).where(Card.card_reference == payload.card_reference)
+    )
+    if card is None:
+        raise ValueError("Card reference does not match an existing card.")
+
+    if card.status.strip().casefold() != "active":
+        raise ValueError("The selected card is inactive.")
+
     transaction_date = payload.transaction_date
     if transaction_date.tzinfo is None:
         transaction_date = transaction_date.replace(tzinfo=timezone.utc)
@@ -47,6 +57,8 @@ def process_transaction(
         transaction_type=payload.transaction_type,
         location=payload.location,
         transaction_date=transaction_date,
+        card_id=card.id,
+        department_id=card.department_id,
     )
     db.add(transaction)
     db.flush()

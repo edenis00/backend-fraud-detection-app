@@ -20,6 +20,8 @@ from app.auth.dependencies import get_current_user
 from app.database.session import get_db
 from app.users.models import User
 from app.core.config import get_settings
+from sqlalchemy import select
+from app.fraud_rules.models import FraudRule
 
 settings = get_settings()
 router = APIRouter(prefix=f"{settings.api_prefix}/analysis", tags=["analysis"])
@@ -76,12 +78,22 @@ def get_fraud(
 
 @router.get("/rules")
 def get_rules(
+    db: DatabaseSession,
     current_user: User = Depends(get_current_user),
 ) -> dict[str, float | int]:
     settings = get_settings()
+    amount_rule = db.scalar(
+        select(FraudRule).where(FraudRule.rule_code == "HIGH_AMOUNT")
+    )
+
+    amount_threshold = (
+        float(amount_rule.threshold)
+        if amount_rule is not None and amount_rule.threshold is not None
+        else settings.fraud_amount_threshold
+    )
 
     return {
-        "amountThreshold": settings.fraud_amount_threshold,
+        "amountThreshold": amount_threshold,
         "frequencyLimit": settings.fraud_frequency_limit,
         "frequencyWindowMinutes": settings.fraud_frequency_window_minutes,
     }

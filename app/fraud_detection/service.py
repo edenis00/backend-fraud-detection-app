@@ -11,8 +11,11 @@ from app.fraud_detection.rules import (
     UNUSUAL_LOCATION_RULE,
     FraudRuleMatch,
     check_high_amount,
+    UNUSUAL_SPENDING_RULE,
+    check_spending_pattern,
 )
 from app.transactions.models import Transaction
+from app.fraud_rules.models import FraudRule
 
 
 def evaluate_transaction(
@@ -22,14 +25,39 @@ def evaluate_transaction(
     settings = get_settings()
     matches: list[FraudRuleMatch] = []
 
+    amount_rule = db.scalar(
+        select(FraudRule).where(FraudRule.rule_code == "HIGH_AMOUNT")
+    )
+    amount_threshold = (
+        Decimal(str(amount_rule.threshold))
+        if amount_rule is not None and amount_rule.threshold is not None
+        else Decimal(str(settings.fraud_amount_threshold))
+    )
+
     high_amount_match = check_high_amount(
         transaction.amount,
-        Decimal(str(settings.fraud_amount_threshold)),
+        amount_threshold,
     )
     if high_amount_match:
         matches.append(high_amount_match)
 
     transaction_time = transaction.transaction_date
+    spending_history = db.scalars(
+        select(Transaction.amount)
+        .where(
+            Transaction.card_reference == transaction.card_reference,
+            Transaction.transaction_date < transaction_time,
+        )
+        .order_by(Transaction.transaction_date.desc())
+        .limit(50)
+    ).all()
+
+    spending_match = check_spending_pattern(
+        transaction.amount,
+        list(spending_history),
+    )
+    if spending_match:
+        matches.append(spending_match)
     window_start = transaction.transaction_date - timedelta(
         minutes=settings.fraud_frequency_window_minutes
     )

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-
+from decimal import Decimal
 from app.core.enums import UserRole
 
 
@@ -15,3 +15,11 @@ class AdminUserCreate(BaseModel):
 
 class AdminRoleUpdate(BaseModel):
     role: UserRole
+
+
+class AmountThresholdUpdate(BaseModel):
+    threshold: Decimal = Field(gt=0, max_digits=15, decimal_places=2)
+
+
+class AmountThresholdResponse(BaseModel):
+    threshold: Decimal

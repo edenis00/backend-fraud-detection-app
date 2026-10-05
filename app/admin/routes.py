@@ -10,7 +10,8 @@ from app.database.session import get_db
 from app.users.models import User
 from app.users.schemas import UserResponse
 from app.departments.models import Department
-from app.admin.schemas import AdminUserCreate, AdminRoleUpdate
+from app.admin.schemas import AdminUserCreate, AdminRoleUpdate, AmountThresholdUpdate, AmountThresholdResponse
+from app.fraud_rules.models import FraudRule
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -26,6 +27,36 @@ def require_admin(
         )
     return current_user
 
+@router.put(
+    "/settings/fraud-threshold",
+    response_model=AmountThresholdResponse,
+)
+def update_amount_threshold(
+    payload: AmountThresholdUpdate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> AmountThresholdResponse:
+    rule = db.scalar(
+        select(FraudRule).where(FraudRule.rule_code == "HIGH_AMOUNT")
+    )
+
+    if rule is None:
+        rule = FraudRule(
+            rule_code="HIGH_AMOUNT",
+            rule_name="High Transaction Amount",
+            description="Flags transactions above the administrator-set amount limit.",
+            threshold=payload.threshold,
+            severity="high",
+            status="active",
+        )
+        db.add(rule)
+    else:
+        rule.threshold = payload.threshold
+        rule.status = "active"
+
+    db.commit()
+    db.refresh(rule)
+    return AmountThresholdResponse(threshold=rule.threshold)
 
 @router.get("/users", response_model=list[UserResponse])
 def list_users(
