@@ -24,14 +24,7 @@ def create_card(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can create cards",
         )
-    
-    existing = CardService.get_card_by_reference(db, card.card_reference)
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Card reference already exists",
-        )
-    
+
     return CardService.create_card(db, card)
 
 
