@@ -1,5 +1,5 @@
 import logging
-
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -18,6 +18,16 @@ from app.audit.routes import router as audit_router
 from app.breakdown.route import router as breakdown_router
 from app.admin.routes import router as admin_router
 from app.core.config import get_settings
+from app.database.base import Base
+from app.database.session import engine
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 settings = get_settings()
 
